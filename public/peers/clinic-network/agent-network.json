@@ -1,0 +1,88 @@
+{
+  "spec_version": "0.1.0-mvs",
+  "network_id": "metro-clinic-triage",
+  "name": "Metro Clinic & Pharmacy Network",
+  "publisher": "Metro Health Open Cooperative",
+  "description": "Independent peer agent network publishing real-time emergency clinic hours, cold-chain insulin storage, oxygen refills, and nurse triage availability.",
+  "entry_agent": "clinic_triage_agent",
+  "allowed_peers": [],
+  "agents": [
+    {
+      "name": "clinic_triage_agent",
+      "role": "peer-specialist",
+      "function": {
+        "description": "Finds open emergency clinics and verifies live cold-chain medication stock (insulin, oxygen, trauma kits, inhalers) across city districts.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "district": {
+              "type": "string",
+              "enum": ["Harbor", "Midtown", "Eastside", "Northgate", "Any"]
+            },
+            "medical_need": {
+              "type": "string",
+              "enum": ["insulin", "oxygen", "first_aid", "pediatric", "general"]
+            }
+          },
+          "required": ["medical_need"],
+          "additionalProperties": false
+        }
+      },
+      "instructions": "Return verified open clinics matching the requested medical need and district, highlighting cold-chain backup power and average wait times.",
+      "tools": ["peer_data://clinics"]
+    }
+  ],
+  "public_dataset": {
+    "updated_at": "2026-11-26T00:00:00Z",
+    "clinics": [
+      {
+        "id": "CL-101",
+        "name": "Midtown St. Jude Urgent Care",
+        "district": "Midtown",
+        "open_24h": true,
+        "backup_generator": true,
+        "wait_minutes": 12,
+        "stock": {
+          "insulin": 42,
+          "oxygen": 18,
+          "first_aid": 110,
+          "pediatric": 25,
+          "general": 95
+        },
+        "distance_to_nearest_shelter": "0.4 km from Midtown Civic Center (SH-201)"
+      },
+      {
+        "id": "CL-104",
+        "name": "Harbor Community Mobile Clinic",
+        "district": "Harbor",
+        "open_24h": false,
+        "backup_generator": true,
+        "wait_minutes": 25,
+        "stock": {
+          "insulin": 6,
+          "oxygen": 0,
+          "first_aid": 64,
+          "pediatric": 14,
+          "general": 50
+        },
+        "distance_to_nearest_shelter": "0.7 km from Harbor Pier Gym (SH-104)"
+      },
+      {
+        "id": "CL-208",
+        "name": "Northgate Regional Medical Hub",
+        "district": "Northgate",
+        "open_24h": true,
+        "backup_generator": true,
+        "wait_minutes": 8,
+        "stock": {
+          "insulin": 65,
+          "oxygen": 34,
+          "first_aid": 150,
+          "pediatric": 40,
+          "general": 120
+        },
+        "distance_to_nearest_shelter": "0.3 km from Northgate High School (SH-305)"
+      }
+    ]
+  }
+}

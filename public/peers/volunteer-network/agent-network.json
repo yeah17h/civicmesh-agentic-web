@@ -1,0 +1,34 @@
+{
+  "spec_version": "0.1.0-mvs",
+  "network_id": "neighborhood-volunteer-mesh",
+  "name": "Neighborhood Volunteer Mutual-Aid Mesh",
+  "publisher": "Civic Volunteers Open Guild",
+  "description": "External third-party peer agent network providing bilingual volunteer interpreters, wheelchair van drivers, and wellness check dispatch.",
+  "entry_agent": "volunteer_matcher",
+  "allowed_peers": [],
+  "agents": [
+    {
+      "name": "volunteer_matcher",
+      "role": "peer-specialist",
+      "function": {
+        "description": "Matches certified neighborhood volunteers (bilingual interpreters, wheelchair van drivers, pet fosters) with active relief requests.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "request": { "type": "string" }
+          },
+          "required": [],
+          "additionalProperties": true
+        }
+      },
+      "instructions": "Return currently on-duty volunteers available to assist with mobility transport or community translation.",
+      "tools": ["peer_data://volunteers"]
+    }
+  ],
+  "public_dataset": {
+    "updated_at": "2026-11-26T00:00:00Z",
+    "on_duty_volunteers": 19,
+    "wheelchair_vans_ready": 4,
+    "languages": ["English", "Spanish", "Mandarin", "Vietnamese"]
+  }
+}

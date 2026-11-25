@@ -1,0 +1,45 @@
+{
+  "spec_version": "0.1.0-mvs",
+  "conforms_to": "https://github.com/cognizant-ai-labs/agentic-web",
+  "site_name": "CivicMesh Community Relief Hub",
+  "description": "Open Agentic Website for federated community emergency shelter, medical triage, and accessible transit coordination. Runs 100% client-side in standard web browsers.",
+  "license": "MIT",
+  "runtime": {
+    "engine": "./runtime/engine.js",
+    "runner": "./runtime/runner.js",
+    "schema_validator": "./runtime/schemaValidator.js",
+    "execution_model": "client-side-browser",
+    "byok_supported": true,
+    "hitl_enforced": true
+  },
+  "networks": [
+    {
+      "id": "civicmesh-relief-hub",
+      "name": "CivicMesh Relief Coordinator Network",
+      "entry_agent": "relief_coordinator",
+      "network_url": "./agent-network.json",
+      "role": "host",
+      "capabilities": [
+        "shelter-capacity-search",
+        "supply-inventory-lookup",
+        "human-approved-bed-reservation",
+        "human-approved-aid-dispatch",
+        "cross-site-peer-federation"
+      ]
+    }
+  ],
+  "federated_peers": [
+    {
+      "id": "metro-clinic-triage",
+      "name": "Metro Clinic & Pharmacy Network",
+      "network_url": "./peers/clinic-network/agent-network.json",
+      "trust_level": "verified-peer"
+    },
+    {
+      "id": "saferoute-transit-feed",
+      "name": "SafeRoute Transit & Hazard Network",
+      "network_url": "./peers/transit-network/agent-network.json",
+      "trust_level": "verified-peer"
+    }
+  ]
+}

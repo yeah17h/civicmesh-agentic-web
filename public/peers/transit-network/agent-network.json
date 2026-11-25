@@ -1,0 +1,91 @@
+{
+  "spec_version": "0.1.0-mvs",
+  "network_id": "saferoute-transit-feed",
+  "name": "SafeRoute Transit & Hazard Network",
+  "publisher": "Open Civic Mobility Alliance",
+  "description": "Independent peer agent network reporting flood-blocked corridors, bridge closures, and wheelchair-accessible emergency shuttle routes.",
+  "entry_agent": "transit_router_agent",
+  "allowed_peers": [],
+  "agents": [
+    {
+      "name": "transit_router_agent",
+      "role": "peer-specialist",
+      "function": {
+        "description": "Evaluates road hazards between districts and recommends safe, wheelchair-accessible evacuation or shuttle corridors.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "origin_district": {
+              "type": "string",
+              "enum": ["Harbor", "Midtown", "Eastside", "Northgate"]
+            },
+            "destination_district": {
+              "type": "string",
+              "enum": ["Harbor", "Midtown", "Eastside", "Northgate"]
+            },
+            "wheelchair_accessible": {
+              "type": "boolean"
+            }
+          },
+          "required": ["origin_district", "destination_district"],
+          "additionalProperties": false
+        }
+      },
+      "instructions": "Always flag active flood or downed-line hazards along direct corridors and return the safest open shuttle or road route.",
+      "tools": ["peer_data://corridors"]
+    }
+  ],
+  "public_dataset": {
+    "updated_at": "2026-11-26T00:00:00Z",
+    "hazards": [
+      {
+        "corridor": "Harbor Blvd Bridge",
+        "status": "CLOSED",
+        "reason": "Storm surge flooding (0.8m water depth)"
+      },
+      {
+        "corridor": "Eastside River Tunnel",
+        "status": "RESTRICTED",
+        "reason": "Emergency vehicles only; downed power lines cleared at 04:00"
+      }
+    ],
+    "routes": [
+      {
+        "from": "Harbor",
+        "to": "Midtown",
+        "recommended_corridor": "Elevated Rail Overpass -> Central Ave (Shuttle Line E2)",
+        "eta_minutes": 14,
+        "wheelchair_accessible": true,
+        "status": "CLEAR",
+        "avoids": "Harbor Blvd Bridge (CLOSED)"
+      },
+      {
+        "from": "Harbor",
+        "to": "Northgate",
+        "recommended_corridor": "West Ridge Parkway -> Northgate Loop (Shuttle Line N1)",
+        "eta_minutes": 21,
+        "wheelchair_accessible": true,
+        "status": "CLEAR",
+        "avoids": "Harbor Blvd Bridge (CLOSED)"
+      },
+      {
+        "from": "Eastside",
+        "to": "Midtown",
+        "recommended_corridor": "Oak Street Viaduct -> Midtown Plaza (Shuttle Line M4)",
+        "eta_minutes": 11,
+        "wheelchair_accessible": true,
+        "status": "CLEAR",
+        "avoids": "Eastside River Tunnel (RESTRICTED)"
+      },
+      {
+        "from": "Midtown",
+        "to": "Northgate",
+        "recommended_corridor": "Civic Express Busway (Shuttle Line N2)",
+        "eta_minutes": 9,
+        "wheelchair_accessible": true,
+        "status": "CLEAR",
+        "avoids": "None"
+      }
+    ]
+  }
+}

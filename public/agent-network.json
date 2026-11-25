@@ -1,0 +1,252 @@
+{
+  "spec_version": "0.1.0-mvs",
+  "network_id": "civicmesh-relief-hub",
+  "name": "CivicMesh Relief Coordinator Network",
+  "description": "A browser-executable multi-agent network that coordinates emergency shelters, supply inventories, and federated peer clinic/transit networks with strict JSON Schema validation and human-in-the-loop write approvals.",
+  "entry_agent": "relief_coordinator",
+  "llm_config": {
+    "default_provider": "demo-deterministic",
+    "supported_providers": [
+      "mozilla-otari",
+      "openai-compatible",
+      "gemini",
+      "ollama-local",
+      "demo-deterministic"
+    ],
+    "byok_required_for_live_llm": true
+  },
+  "allowed_peers": [
+    {
+      "peer_id": "metro-clinic-triage",
+      "name": "Metro Clinic & Pharmacy Network",
+      "url": "./peers/clinic-network/agent-network.json",
+      "allowed_agents": ["clinic_triage_agent"]
+    },
+    {
+      "peer_id": "saferoute-transit-feed",
+      "name": "SafeRoute Transit & Hazard Network",
+      "url": "./peers/transit-network/agent-network.json",
+      "allowed_agents": ["transit_router_agent"]
+    }
+  ],
+  "agents": [
+    {
+      "name": "relief_coordinator",
+      "role": "orchestrator",
+      "function": {
+        "description": "Front-end orchestrator that receives resident or volunteer emergency requests, delegates to local shelter/dispatch specialists and federated peer networks (clinics and transit), and proposes human-approved actions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "request": {
+              "type": "string",
+              "minLength": 3,
+              "description": "The natural language emergency or community aid request."
+            },
+            "district": {
+              "type": "string",
+              "enum": ["Harbor", "Midtown", "Eastside", "Northgate", "Any"],
+              "description": "Preferred city district if known."
+            }
+          },
+          "required": ["request"],
+          "additionalProperties": false
+        }
+      },
+      "instructions": "You are the CivicMesh Relief Coordinator. Always gather live facts before proposing write actions. First consult shelter_specialist for shelter availability and supplies. If medical needs (insulin, oxygen, first aid, prescription) are mentioned, call the federated peer metro-clinic-triage/clinic_triage_agent. If travel, wheelchair access, or flooding/bridge closures are relevant, call the federated peer saferoute-transit-feed/transit_router_agent. Finally, delegate bed reservations or aid dispatches to dispatch_planner, which will request explicit human approval before changing site state.",
+      "tools": [
+        "shelter_specialist",
+        "dispatch_planner",
+        "peer://metro-clinic-triage/clinic_triage_agent",
+        "peer://saferoute-transit-feed/transit_router_agent"
+      ]
+    },
+    {
+      "name": "shelter_specialist",
+      "role": "specialist",
+      "function": {
+        "description": "Queries live local shelter bed capacity, wheelchair accessibility, pet friendliness, backup power, and emergency supply inventory on the host CivicMesh site.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "district": {
+              "type": "string",
+              "enum": ["Harbor", "Midtown", "Eastside", "Northgate", "Any"]
+            },
+            "needs_wheelchair": {
+              "type": "boolean"
+            },
+            "needs_power": {
+              "type": "boolean"
+            },
+            "needs_pets": {
+              "type": "boolean"
+            },
+            "min_beds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "supply_item": {
+              "type": "string",
+              "enum": ["water_packs", "medical_kits", "blankets", "baby_formula", "solar_chargers"]
+            }
+          },
+          "required": ["district"],
+          "additionalProperties": false
+        }
+      },
+      "instructions": "Use local read-only site actions query_shelters and check_supply_inventory to return accurate, verified shelter matches and stock levels. Never invent capacities.",
+      "tools": [
+        "site://query_shelters",
+        "site://check_supply_inventory"
+      ]
+    },
+    {
+      "name": "dispatch_planner",
+      "role": "action-planner",
+      "function": {
+        "description": "Prepares schema-validated shelter bed reservations and mobile aid dispatch tickets. Every write action requires explicit human-in-the-loop approval before execution.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "action_type": {
+              "type": "string",
+              "enum": ["reserve_bed", "dispatch_aid"]
+            },
+            "shelter_id": {
+              "type": "string",
+              "pattern": "^SH-[0-9]{3}$"
+            },
+            "party_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "contact_alias": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["routine", "urgent", "critical"]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 240
+            }
+          },
+          "required": ["action_type", "shelter_id", "contact_alias"],
+          "additionalProperties": false
+        }
+      },
+      "instructions": "Validate every field strictly against the site action JSON Schema before calling site://reserve_shelter_bed or site://create_aid_dispatch. Always summarize the exact impact clearly for the human reviewer.",
+      "tools": [
+        "site://reserve_shelter_bed",
+        "site://create_aid_dispatch"
+      ]
+    }
+  ],
+  "site_actions": [
+    {
+      "name": "query_shelters",
+      "effect": "read",
+      "description": "Search open community shelters by district, accessibility, backup power, and available bed count.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "district": {
+            "type": "string",
+            "enum": ["Harbor", "Midtown", "Eastside", "Northgate", "Any"]
+          },
+          "needs_wheelchair": { "type": "boolean" },
+          "needs_power": { "type": "boolean" },
+          "needs_pets": { "type": "boolean" },
+          "min_beds": { "type": "integer", "minimum": 1, "maximum": 20 }
+        },
+        "required": ["district"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "check_supply_inventory",
+      "effect": "read",
+      "description": "Inspect real-time emergency supply counts across distribution hubs.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "enum": ["water_packs", "medical_kits", "blankets", "baby_formula", "solar_chargers", "all"]
+          }
+        },
+        "required": ["item"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "reserve_shelter_bed",
+      "effect": "write",
+      "description": "Hold beds at a verified community shelter for an incoming resident or family. Decrements live bed availability.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "shelter_id": {
+            "type": "string",
+            "pattern": "^SH-[0-9]{3}$"
+          },
+          "party_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "resident_alias": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "accessibility_notes": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": ["shelter_id", "party_size", "resident_alias"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_aid_dispatch",
+      "effect": "write",
+      "description": "Create an active mobile aid or volunteer courier dispatch ticket linked to a shelter or district.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "destination_shelter_id": {
+            "type": "string",
+            "pattern": "^SH-[0-9]{3}$"
+          },
+          "supply_item": {
+            "type": "string",
+            "enum": ["water_packs", "medical_kits", "blankets", "baby_formula", "solar_chargers"]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["routine", "urgent", "critical"]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 240
+          }
+        },
+        "required": ["destination_shelter_id", "supply_item", "quantity", "priority"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
